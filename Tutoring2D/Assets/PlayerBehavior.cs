@@ -9,11 +9,20 @@ public class PlayerBehavior : MonoBehaviour
     public float acceleration = 2;
     public float jumpHeight = 200;
 
+    public float direction = 0;
+
     public LayerMask ground;
+
+    public static PlayerBehavior instance;
 
     private float xMove;
     private bool grounded;
-    Rigidbody2D rb2d;
+    private Rigidbody2D rb2d;
+
+    private void Awake()
+    {
+        instance = this;
+    }
 
     void Start()
     {
@@ -25,13 +34,13 @@ public class PlayerBehavior : MonoBehaviour
         grounded = Physics2D.Raycast(transform.position, Vector2.down, 1, ground);
 
         Vector2 v = rb2d.velocity;
-        // linear interpolation
         v.x = Mathf.Lerp(v.x, xMove, Time.deltaTime * acceleration);
         rb2d.velocity = v;
     }
 
     private void OnMovement(InputValue iValue)
     {
+        direction = iValue.Get<float>();
         xMove = speed * iValue.Get<float>();
     }
 
