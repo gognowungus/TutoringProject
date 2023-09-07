@@ -8,6 +8,7 @@ public class PlayerBehavior : MonoBehaviour
     public float speed = 15;
     public float maxSpeed = 3;
     public float jumpHeight = 200;
+    public float slowDown = 1;
 
     public Vector2 direction;
     public LayerMask ground;
@@ -37,15 +38,22 @@ public class PlayerBehavior : MonoBehaviour
         if(moveSpeed.magnitude > maxSpeed)
         {
             moveSpeed = moveSpeed.normalized * maxSpeed;
-            Vector3 playerSpeed = rigidbody.velocity;
-            playerSpeed.x = moveSpeed.x;
-            playerSpeed.z = moveSpeed.y;
-            rigidbody.velocity = playerSpeed;
         }
+
+        moveSpeed = Vector2.Lerp(moveSpeed, Vector2.zero, Time.deltaTime * slowDown);
+
+        Vector3 playerSpeed = rigidbody.velocity;
+        playerSpeed.x = moveSpeed.x;
+        playerSpeed.z = moveSpeed.y;
+        rigidbody.velocity = playerSpeed;
     }
 
     private void OnMovement(InputValue iValue)
     {
+        // W + D vector(1,1)
+        // 1,1 > 0,1
+        // normalization
+        // 1,1
         direction = iValue.Get<Vector2>();
     }
 
