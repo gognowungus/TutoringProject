@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Cinemachine;
 
 public class PlayerBehavior : MonoBehaviour
 {
@@ -10,14 +11,20 @@ public class PlayerBehavior : MonoBehaviour
     public float jumpHeight = 200;
     public float slowDown = 1;
     public float meleeDamage = 1;
+    public float knockBack = 500;
+
+    public int health;
+    public int maxHealth;
 
     public GameObject sword;
+    public CinemachineVirtualCamera cinemachineCamera;
 
     public Vector2 direction;
     public LayerMask ground;
     public LayerMask enemy;
     public static PlayerBehavior instance;
 
+    private bool canAttack = true;
     private bool grounded;
     private Rigidbody rigidbody;
 
@@ -29,6 +36,7 @@ public class PlayerBehavior : MonoBehaviour
     void Start()
     {
         rigidbody = GetComponent<Rigidbody>();
+        health = maxHealth;
     }
 
     void Update()
@@ -53,8 +61,36 @@ public class PlayerBehavior : MonoBehaviour
 
         if(direction.magnitude > 0)
         {
-            transform.forward = Vector3.Lerp(transform.forward, new Vector3(direction.x, 0, direction.y), Time.deltaTime * 8);
+            transform.forward = Vector3.Lerp(transform.forward, new Vector3(direction.x, 0, direction.y), Time.deltaTime * 16);
         }
+    }
+
+    public void ChangeHealth(int amount)
+    {
+        health = Mathf.Clamp(health + amount, 0, maxHealth);
+
+        UIBehavior.instance.UpdateHealth(health, maxHealth);
+
+        if(amount < 0)
+        {
+            StopCoroutine(nameof(ScreenShake));
+            StartCoroutine(ScreenShake(0.5f));
+        }
+
+        if(health <= 0)
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
+        }
+    }
+
+    private IEnumerator ScreenShake(float time)
+    {
+        CinemachineBasicMultiChannelPerlin noise = cinemachineCamera.GetCinemachineComponent<CinemachineBasicMultiChannelPerlin>();
+        noise.m_AmplitudeGain = 5;
+        noise.m_FrequencyGain = 1;
+        yield return new WaitForSeconds(time);
+        noise.m_AmplitudeGain = 0;
+        noise.m_FrequencyGain = 0;
     }
 
     private void OnMovement(InputValue iValue)
@@ -72,6 +108,11 @@ public class PlayerBehavior : MonoBehaviour
 
     private void OnMelee()
     {
+        if(!canAttack)
+        {
+            return;
+        }
+
         StopAllCoroutines();
         StartCoroutine(WeaponSwing());
 
@@ -83,8 +124,9 @@ public class PlayerBehavior : MonoBehaviour
         {
             if(h.collider.GetComponent<EnemyBehavior>())
             {
+                h.collider.GetComponent<EnemyBehavior>().StunEnemy();
                 h.collider.GetComponent<EnemyBehavior>().ChangeHealth(-meleeDamage);
-                h.collider.GetComponent<Rigidbody>().AddExplosionForce(500, transform.position, 3);
+                h.collider.GetComponent<Rigidbody>().AddExplosionForce(knockBack, transform.position, 3);
             }
         }
     }
@@ -94,6 +136,7 @@ public class PlayerBehavior : MonoBehaviour
 
     private IEnumerator WeaponSwing()
     {
+        canAttack = false;
         sword.transform.localRotation = Quaternion.Euler(new Vector3(0, -30 * swingDirection, 0));
 
         float timeElapsed = 0;
@@ -106,5 +149,6 @@ public class PlayerBehavior : MonoBehaviour
         }
 
         swingDirection *= -1;
+        canAttack = true;
     }
 }
