@@ -41,7 +41,7 @@ public class PlayerBehavior : MonoBehaviour
 
     void Update()
     {
-        grounded = Physics.Raycast(transform.position, Vector3.down, 1, ground);
+        grounded = Physics.Raycast(transform.position, Vector3.down, 2, ground);
 
         rigidbody.AddForce(new Vector3(direction.x, 0, direction.y) * speed);
 
